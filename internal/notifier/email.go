@@ -2,8 +2,8 @@ package notifier
 
 import (
 	"fmt"
-	"net/smtp"
 
+	mail "github.com/go-mail/mail/v2"
 	"github.com/notify-hub/internal/config"
 	"github.com/notify-hub/internal/logger"
 )
@@ -26,14 +26,16 @@ func (e *EmailNotifier) Send(integrationKey, to, message string) error {
 		return fmt.Errorf("email integration key %s not found", integrationKey)
 	}
 
-	auth := smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.Host)
-	
-	msg := fmt.Sprintf("To: %s\r\nSubject: Notification\r\n\r\n%s", to, message)
-	
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	
-	err := smtp.SendMail(addr, auth, cfg.Username, []string{to}, []byte(msg))
-	if err != nil {
+	m := mail.NewMessage()
+	m.SetHeader("From", cfg.Username)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", "Notification")
+	m.SetBody("text/plain", message)
+
+	d := mail.NewDialer(cfg.Host, 465, cfg.Username, cfg.Password)
+	d.SSL = true // ВАЖНО: для Gmail принудительно включаем SSL
+
+	if err := d.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 
