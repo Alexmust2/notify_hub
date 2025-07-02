@@ -1,0 +1,22 @@
+telegram:
+  bot-client-notifyhub:
+    token: "1234567890:AAFakeTokenExampleNotifyHub-abcdefghijklmno"
+  bot-client-kastevs:
+    token: "0987654321:AAFakeTokenExampleKastevs-pqrstuvwxyz12345"
+
+email:
+  smtp-provider-gmail:
+    host: "smtp.gmail.com"
+    port: 587
+    username: "fakeuser@gmail.com"
+    password: "fakepassword123"
+  smtp-provider-yandex:
+    host: "smtp.yandex.ru"
+    port: 587
+    username: "fakeuser@yandex.ru"
+    password: "fakepassword456"
+  smtp-provider-beget:
+    host: "smtp.beget.com"
+    port: 465
+    username: "noreply@fake-domain.ru"
+    password: "fakepassword789"
