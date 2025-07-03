@@ -8,6 +8,18 @@ import (
 	"github.com/notify-hub/internal/queue"
 )
 
+type ChannelNotification struct {
+	Channel        string
+	IntegrationKey string
+	Receivers      []string
+}
+
+type ChannelResult struct {
+	Channel      string
+	Success      bool
+	ErrorMessage string
+}
+
 type NotificationUseCase struct {
 	notifiers map[string]notifier.Notifier
 	queue     queue.Queue
@@ -26,36 +38,40 @@ func NewNotificationUseCase(
 	}
 }
 
-func (uc *NotificationUseCase) SendNotification(channel, integrationKey, receiver, message string) error {
-	notifier, exists := uc.notifiers[channel]
-	if !exists {
-		return fmt.Errorf("channel %s not supported", channel)
+func (uc *NotificationUseCase) SendNotificationMulti(notifications []ChannelNotification, message string) []ChannelResult {
+	var results []ChannelResult
+
+	for _, n := range notifications {
+		notifier, exists := uc.notifiers[n.Channel]
+		if !exists {
+			errMsg := fmt.Sprintf("channel %s not supported", n.Channel)
+			uc.logger.Error(errMsg)
+			results = append(results, ChannelResult{
+				Channel:      n.Channel,
+				Success:      false,
+				ErrorMessage: errMsg,
+			})
+			continue
+		}
+
+		err := notifier.Send(n.IntegrationKey, n.Receivers, message)
+		if err != nil {
+			uc.logger.Error(fmt.Sprintf("Failed to send notification to channel %s: %v", n.Channel, err))
+			results = append(results, ChannelResult{
+				Channel:      n.Channel,
+				Success:      false,
+				ErrorMessage: err.Error(),
+			})
+			continue
+		}
+
+		uc.logger.Info(fmt.Sprintf("Notification sent to channel %s", n.Channel))
+		results = append(results, ChannelResult{
+			Channel:      n.Channel,
+			Success:      true,
+			ErrorMessage: "",
+		})
 	}
 
-	// Для синхронной отправки (можно изменить на асинхронную через очередь)
-	err := notifier.Send(integrationKey, receiver, message)
-	if err != nil {
-		uc.logger.Error(fmt.Sprintf("Failed to send notification: %v", err))
-		return err
-	}
-
-	return nil
-}
-
-func (uc *NotificationUseCase) SendNotificationAsync(channel, integrationKey, receiver, message string) {
-	task := queue.NotificationTask{
-		Channel:        channel,
-		IntegrationKey: integrationKey,
-		Receiver:       receiver,
-		Message:        message,
-		Callback: func(err error) {
-			if err != nil {
-				uc.logger.Error(fmt.Sprintf("Async notification failed: %v", err))
-			} else {
-				uc.logger.Info("Async notification sent successfully")
-			}
-		},
-	}
-
-	uc.queue.Enqueue(task)
+	return results
 }

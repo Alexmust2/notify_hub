@@ -1,5 +1,5 @@
 package notifier
 
 type Notifier interface {
-	Send(integrationKey, to, message string) error
+	Send(integrationKey string, to []string, message string) error
 }

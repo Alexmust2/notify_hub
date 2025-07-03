@@ -20,7 +20,7 @@ func NewEmailNotifier(configs map[string]config.EmailConfig, logger logger.Logge
 	}
 }
 
-func (e *EmailNotifier) Send(integrationKey, to, message string) error {
+func (e *EmailNotifier) Send(integrationKey string, to []string, message string) error {
 	cfg, exists := e.configs[integrationKey]
 	if !exists {
 		return fmt.Errorf("email integration key %s not found", integrationKey)
@@ -28,7 +28,7 @@ func (e *EmailNotifier) Send(integrationKey, to, message string) error {
 
 	m := mail.NewMessage()
 	m.SetHeader("From", cfg.Username)
-	m.SetHeader("To", to)
+	m.SetHeader("To", to...)
 	m.SetHeader("Subject", "Notification")
 	m.SetBody("text/plain", message)
 
@@ -39,6 +39,6 @@ func (e *EmailNotifier) Send(integrationKey, to, message string) error {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 
-	e.logger.Info(fmt.Sprintf("Email sent successfully to %s via %s", to, integrationKey))
+	e.logger.Info(fmt.Sprintf("Email sent successfully to %v via %s", to, integrationKey))
 	return nil
 }

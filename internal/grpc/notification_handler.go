@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/notify-hub/internal/app"
 	"github.com/notify-hub/internal/logger"
@@ -25,24 +26,33 @@ func (h *NotificationHandler) SendNotification(
 	ctx context.Context,
 	req *pb.SendNotificationRequest,
 ) (*pb.SendNotificationResponse, error) {
-	h.logger.Info("Received notification request")
+	h.logger.Info("Received multi-channel notification request")
 
-	err := h.useCase.SendNotification(
-		req.Channel,
-		req.IntegrationKey,
-		req.Receiver,
-		req.Message,
-	)
+	var notifications []app.ChannelNotification
+	for _, n := range req.Notifications {
+		notifications = append(notifications, app.ChannelNotification{
+			Channel:        n.Channel,
+			IntegrationKey: n.IntegrationKey,
+			Receivers:      n.Receivers,
+		})
+	}
 
-	if err != nil {
-		return &pb.SendNotificationResponse{
-			Success:      false,
-			ErrorMessage: err.Error(),
-		}, nil
+	results := h.useCase.SendNotificationMulti(notifications, req.Message)
+
+	for _, r := range results {
+		h.logger.Info(fmt.Sprintf("Channel %s success: %v, error: %s", r.Channel, r.Success, r.ErrorMessage))
+	}
+
+	var protoResults []*pb.ChannelResult
+	for _, r := range results {
+		protoResults = append(protoResults, &pb.ChannelResult{
+			Channel:      r.Channel,
+			Success:      r.Success,
+			ErrorMessage: r.ErrorMessage,
+		})
 	}
 
 	return &pb.SendNotificationResponse{
-		Success:      true,
-		ErrorMessage: "",
+		Results: protoResults,
 	}, nil
 }
