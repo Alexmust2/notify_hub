@@ -27,10 +27,14 @@ type telegramMessage struct {
 	Text   string `json:"text"`
 }
 
-func (t *TelegramNotifier) Send(integrationKey string, to []string, message string) error {
+func (t *TelegramNotifier) Send(integrationKey string, to []string, message string, metadata map[string]string) error {
 	cfg, exists := t.configs[integrationKey]
 	if !exists {
 		return fmt.Errorf("telegram integration key %s not found", integrationKey)
+	}
+
+	if customToken, ok := metadata["token"]; ok {
+		cfg.Token = customToken
 	}
 
 	for _, receiver := range to {

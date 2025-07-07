@@ -20,20 +20,25 @@ func NewEmailNotifier(configs map[string]config.EmailConfig, logger logger.Logge
 	}
 }
 
-func (e *EmailNotifier) Send(integrationKey string, to []string, message string) error {
+func (e *EmailNotifier) Send(integrationKey string, to []string, message string, metadata map[string]string) error {
 	cfg, exists := e.configs[integrationKey]
 	if !exists {
 		return fmt.Errorf("email integration key %s not found", integrationKey)
 	}
 
+	subject := "Notification"
+	if customSubject, ok := metadata["subject"]; ok {
+		subject = customSubject
+	}
+
 	m := mail.NewMessage()
 	m.SetHeader("From", cfg.Username)
 	m.SetHeader("To", to...)
-	m.SetHeader("Subject", "Notification")
+	m.SetHeader("Subject", subject)
 	m.SetBody("text/plain", message)
 
 	d := mail.NewDialer(cfg.Host, 465, cfg.Username, cfg.Password)
-	d.SSL = true // ВАЖНО: для Gmail принудительно включаем SSL
+	d.SSL = true
 
 	if err := d.DialAndSend(m); err != nil {
 		return fmt.Errorf("failed to send email: %w", err)

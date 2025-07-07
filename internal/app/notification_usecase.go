@@ -12,6 +12,7 @@ type ChannelNotification struct {
 	Channel        string
 	IntegrationKey string
 	Receivers      []string
+	Metadata       map[string]string
 }
 
 type ChannelResult struct {
@@ -53,8 +54,7 @@ func (uc *NotificationUseCase) SendNotificationMulti(notifications []ChannelNoti
 			})
 			continue
 		}
-
-		err := notifier.Send(n.IntegrationKey, n.Receivers, message)
+		err := notifier.Send(n.IntegrationKey, n.Receivers, message, n.Metadata)
 		if err != nil {
 			uc.logger.Error(fmt.Sprintf("Failed to send notification to channel %s: %v", n.Channel, err))
 			results = append(results, ChannelResult{

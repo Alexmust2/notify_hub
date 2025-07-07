@@ -34,6 +34,7 @@ func (h *NotificationHandler) SendNotification(
 			Channel:        n.Channel,
 			IntegrationKey: n.IntegrationKey,
 			Receivers:      n.Receivers,
+			Metadata:       n.Metadata,
 		})
 	}
 
